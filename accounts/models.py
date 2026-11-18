@@ -6,6 +6,10 @@ import uuid
 class Blog(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=155)
-    descrition = models.TextField
-    created_at = models.BooleanField(auto_now_add=True)
-    updated_at = models.BooleanField(auto_now=True)
+    descrition = models.TextField(default="")
+    created_at = models.DateField(auto_now_add=True)
+    updated_at = models.DateField(auto_now=True)
+    
+    def __str__(self):
+        return self.title
+    

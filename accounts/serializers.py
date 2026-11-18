@@ -1,19 +1,15 @@
 from rest_framework import serializers
 from . models import Blog
 
+
 class BlogSerializer(serializers.ModelSerializer):
-    class Meat:
+    class Meta:
         model = Blog
         fields = [
             'id',
-            'title'
-            'description',
+            'title',
+            'descrition',
             'created_at',
             'updated_at'
-            ]
-        
-        read_only_fields = [
-            'id',
-            'created_at',
-            'updated_at',
         ]
+        read_only_fields = ['id', 'created_at', 'updated_at']

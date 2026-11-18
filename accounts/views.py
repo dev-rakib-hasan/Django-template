@@ -7,7 +7,7 @@ from .models import Blog
 # Create your views here.
 
 @api_view(['POST'])
-def create_blod(request):
+def create_blog(request):
     serializer = BlogSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
     serializer.save()
