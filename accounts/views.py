@@ -18,10 +18,10 @@ from .serializers import(
 
 
 
-# # Show All Blogs
-# def blog_list(request):
-#     blogs = Blog.objects.all()
-#     return render(request, 'accounts/blog_list.html', {'blogs': blogs})
+# Show All Blogs
+def blog_list(request):
+    blogs = Blog.objects.all()
+    return render(request, 'accounts/blog_list.html', {'blogs': blogs})
 
 
 # Create Blog
