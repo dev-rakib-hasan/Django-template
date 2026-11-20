@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render, redirect
 from rest_framework.response import Response
 from rest_framework import status
 from drf_spectacular.utils import(
@@ -14,6 +14,68 @@ from .models import(
 from .serializers import(
     BlogSerializer
 )
+
+
+
+
+# Show All Blogs
+def blog_list(request):
+    blogs = Blog.objects.all()
+    return render(request, 'accounts/blog_list.html', {'blogs': blogs})
+
+
+# Create Blog
+def blog_create_page(request):
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+
+        Blog.objects.create(
+            title=title,
+            description=description
+        )
+
+        return redirect('blog_list')
+
+    return render(request, 'accounts/blog_create.html')
+
+
+# Show blog
+def blog_list_id(request, pk):
+    blog = get_object_or_404(Blog, pk=pk)
+
+    return render(request, 'accounts/blog_detail.html', {'blog': blog})
+
+
+# Update Blog
+def blog_update_page(request, pk):
+    blog = get_object_or_404(Blog, pk=pk)
+
+    if request.method == 'POST':
+        blog.title = request.POST.get('title')
+        blog.description = request.POST.get('description')
+        blog.save()
+
+        return redirect('blog_list')
+
+    return render(request, 'accounts/blog_detail.html', {'blog': blog})
+
+
+# Delete Blog
+def blog_delete_page(request, pk):
+    blog = get_object_or_404(Blog, pk=pk)
+
+    if request.method == 'POST':
+        blog.delete()
+
+    return redirect('blog_list')
+
+
+
+
+#===============
+# DRF API VIEWS
+#===============
 
 @extend_schema(
     tags=['Blog'],
@@ -68,7 +130,7 @@ def blog_detail(request, pk):
         serializer = BlogSerializer(blog)
         return Response(serializer.data)
     
-    elif request.method == ['PUT','PATCH']:
+    elif request.method in ['PUT','PATCH']:
         if request.method == 'PATCH':
             serializer = BlogSerializer(
                 blog,
