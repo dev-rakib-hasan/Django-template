@@ -57,8 +57,8 @@ def blog_update_page(request, pk):
         blog.save()
 
         return redirect('blog_list')
-
     return render(request, 'accounts/blog_detail.html', {'blog': blog})
+    
 
 
 # Delete Blog
