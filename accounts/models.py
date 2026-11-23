@@ -24,7 +24,7 @@ def generate_unique_slug(instance, value):
     return slug
  
 class Blog(models.Model):
-    #id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)P
+    #id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(max_length=155)
     description = models.TextField(blank=True)
     slug = models.SlugField(max_length=100, unique=True)
@@ -35,7 +35,10 @@ class Blog(models.Model):
         if not self.slug:
             self.slug = generate_unique_slug(self, self.title)
         super().save(*args, **kwargs)
-    
+   
+    class Meta:
+        ordering = ['-created_at']
+        
     def __str__(self):
         return self.title
     
