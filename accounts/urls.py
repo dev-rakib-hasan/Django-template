@@ -3,6 +3,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+     # Reegister & Login URLs
+    path('register/', views.register, name='register'),
+    path('login/', views.login, name='login'),
 
     # Swagger / API URLs
     path('blog/', views.create_blog, name='create_blog'),

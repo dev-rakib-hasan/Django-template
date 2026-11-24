@@ -1,5 +1,6 @@
-from django.db import models
+from django.contrib.auth.models import AbstractUser
 from django.utils.text import slugify
+from django.db import models
 
 #import uuid
 # Create your models here.
@@ -22,6 +23,18 @@ def generate_unique_slug(instance, value):
         counter+=1
         
     return slug
+
+
+# Create your models here.
+class CustomUser(AbstractUser):
+    email = models.EmailField(unique=True)
+    
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['username']
+    
+    def __str__(self):
+        return self.username
+
  
 class Blog(models.Model):
     #id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
