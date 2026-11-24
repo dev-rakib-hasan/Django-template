@@ -197,7 +197,7 @@ def create_blog(request):
 )
     
 @api_view(['GET', 'PUT','PATCH','DELETE'])
-@permission_classes([AllowAny])
+@permission_classes([IsAuthenticated])
 def blog_detail(request, pk):
     blog = get_object_or_404(Blog, pk=pk)
   # GET API  
