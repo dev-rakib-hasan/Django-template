@@ -12,12 +12,16 @@ from drf_spectacular.utils import(
     OpenApiParameter,
 )
 from .models import(
-    Blog
+    Blog,
+    Like,
+    Comment
 )
 from .serializers import(
     BlogSerializer,
     LoginSerializer,
     RegisterSerializer,
+    LikeSerializer,
+    CommentSerializer
 )
 
 
@@ -226,3 +230,123 @@ def blog_detail(request, pk):
         blog.delete()
         
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+#===================
+# Like Comment API
+#===================
+
+@extend_schema(
+    tags=['Like'],
+    summary='Like or Unlike Blog',
+    request=LikeSerializer,
+    responses={
+        201:OpenApiResponse(description='Liked Succesfully.'),
+        200:OpenApiResponse(description='Success.'),
+        400:OpenApiResponse(description='Bad Request'),
+        404:OpenApiResponse(description='Not Found.')
+    }
+)
+@api_view(['POST','DELETE'])
+@permission_classes([IsAuthenticated])
+def blog_like(request, pk):
+    blog = get_object_or_404(Blog, pk=pk)
+    
+    if request.method == 'POST':
+        like, created = Like.objects.get_or_create(
+            user = request.user,
+            blog = blog
+        )
+        if created:
+            return Response(
+                {'message': 'Liked Successfully.'},
+                status=status.HTTP_201_CREATED
+            )
+        return Response(
+            {'message':'Already Liked.'},
+            status=status.HTTP_200_OK
+        )
+    like = Like.objects.filter(
+        user = request.user,
+        blog = blog
+    )
+    if like.exists():
+        like.delete()
+        return Response(
+            {'message':'Unliked Successfully.'},
+            status=status.HTTP_200_OK
+        )
+    return Response(
+        {'message':'you have not like this blog.'},
+        status=status.HTTP_400_BAD_REQUEST
+    )
+
+@extend_schema(
+    tags=['Comment'],
+    summary='Retrieve, Create or Delete Blog Comments',
+    request=CommentSerializer,
+    responses={
+        200: OpenApiResponse(description='Success'),
+        201: CommentSerializer,
+        400: OpenApiResponse(description='Validation Error'),
+        401: OpenApiResponse(description='Authentication Required'),
+        404: OpenApiResponse(description='Comment or Blog Not Found')
+    }
+) 
+    
+@api_view(['GET','POST','PATCH','DELETE'])
+@permission_classes([AllowAny])
+def blog_comment(request, pk):
+    blog = get_object_or_404(Blog, pk=pk)
+    
+    if request.method == 'GET':
+        comments = Comment.objects.filter(blog=blog)
+        serializer = CommentSerializer(
+            comments,
+            many=True
+        )
+        return Response(serializer.data)
+    if not request.user.is_authenticated:
+        return Response(
+            {'message':'Authentication Required'},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+    elif request.method == 'POST':
+        serializer = CommentSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user, blog=blog)
+    
+        return Response(
+            serializer.data,
+            status=status.HTTP_201_CREATED
+        )
+    elif request.method == 'PATCH':
+        comment = get_object_or_404(
+            Comment,
+            id=request.data.get('comment_id'),
+            blog = blog,
+            user=request.user     
+        )
+        serializer = CommentSerializer(
+            comment,
+            data=request.data,
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
+        
+    elif request.method == 'DELETE':
+        comments = get_object_or_404(
+            Comment,
+            id = request.data.get('comment_id'),
+            blog = blog,
+            user = request.user
+        )
+        comment.delete()
+        return Response(
+            {'message':'Comment Deleted Successfully.'},
+            status=status.HTTP_200_OK
+        )
