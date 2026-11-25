@@ -1,30 +1,30 @@
+from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, render, redirect
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.response import Response
-from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
-from rest_framework import status
-from drf_spectacular.utils import(
-    extend_schema,
-    OpenApiResponse,
-    OpenApiRequest,
-    OpenApiParameter,
-)
 from .models import(
     Blog,
     Like,
-    Comment
+    Comment,
 )
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiRequest,
+    OpenApiResponse
+)
+
 from .serializers import(
-    BlogSerializer,
-    LoginSerializer,
     RegisterSerializer,
+    LoginSerializer,
+    BlogSerializer,
     LikeSerializer,
-    CommentSerializer
+    CommentSerializer,
 )
-
-
+# Create your views here.
 @extend_schema(
     tags=['Register'],
     summary="Register a new user.",
@@ -97,12 +97,14 @@ def blog_list(request):
 
 
 # Create Blog
+@login_required
 def blog_create_page(request):
     if request.method == 'POST':
         title = request.POST.get('title')
         description = request.POST.get('description')
 
         Blog.objects.create(
+            user=request.user,
             title=title,
             description=description
         )
@@ -112,16 +114,21 @@ def blog_create_page(request):
     return render(request, 'accounts/blog_create.html')
 
 
+
 # Show blog
 def blog_list_id(request, pk):
     blog = get_object_or_404(Blog, pk=pk)
 
     return render(request, 'accounts/blog_detail.html', {'blog': blog})
 
-
-# Update Blog
+# Update blog
+@login_required
 def blog_update_page(request, pk):
-    blog = get_object_or_404(Blog, pk=pk)
+    blog = get_object_or_404(
+        Blog,
+        pk=pk,
+        user=request.user
+    )
 
     if request.method == 'POST':
         blog.title = request.POST.get('title')
@@ -129,13 +136,22 @@ def blog_update_page(request, pk):
         blog.save()
 
         return redirect('blog_list')
-    return render(request, 'accounts/blog_detail.html', {'blog': blog})
-    
+
+    return render(
+        request,
+        'accounts/blog_detail.html',
+        {'blog': blog}
+    )
 
 
 # Delete Blog
+@login_required
 def blog_delete_page(request, pk):
-    blog = get_object_or_404(Blog, pk=pk)
+    blog = get_object_or_404(
+        Blog,
+        pk=pk,
+        user=request.user
+    )
 
     if request.method == 'POST':
         blog.delete()
@@ -143,11 +159,9 @@ def blog_delete_page(request, pk):
     return redirect('blog_list')
 
 
-
-
-#===============
-# DRF API VIEWS
-#===============
+#====================
+# Blog Api
+#====================
 
 @extend_schema(
     tags=['Blog'],
@@ -161,32 +175,25 @@ def blog_delete_page(request, pk):
     },
 )
 
-# Create your views here.
-
-@api_view(['GET', 'POST'])
+@api_view(['GET','POST'])
 @permission_classes([AllowAny])
-def create_blog(request):
+def blog_list_create(request):
     if request.method == 'GET':
         blogs = Blog.objects.all()
         serializer = BlogSerializer(blogs, many=True)
         return Response(serializer.data)
-
-    # POST request
+    
     if not request.user.is_authenticated:
         return Response(
-            {'detail': 'Authentication required'},
+            {'message':'Authentication Required'},
             status=status.HTTP_401_UNAUTHORIZED
         )
-
     serializer = BlogSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    serializer.save(user=request.user)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    return Response(
-        serializer.data,
-        status=status.HTTP_201_CREATED
-    )
-    
+
 @extend_schema(
     tags=['Blog'],
     summary='Retrieve update or delete blog',
@@ -199,12 +206,12 @@ def create_blog(request):
         404:OpenApiResponse(description='Blog Not Found')
     },
 )
-    
-@api_view(['GET', 'PUT','PATCH','DELETE'])
+
+@api_view(['GET','PUT','PATCH','DELETE'])
 @permission_classes([IsAuthenticated])
 def blog_detail(request, pk):
     blog = get_object_or_404(Blog, pk=pk)
-  # GET API  
+    
     if request.method == 'GET':
         serializer = BlogSerializer(blog)
         return Response(serializer.data)
@@ -216,20 +223,19 @@ def blog_detail(request, pk):
                 data=request.data,
                 partial=True
                 )
-        
         else: 
             serializer = BlogSerializer(
                 blog,
-                data=request.data,
-                
-            )
+                data=request.data
+                )
+            
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+    
     elif request.method == 'DELETE':
         blog.delete()
-        
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'message':'Blog Deleted Succesfully.'},status=status.HTTP_204_NO_CONTENT)
     
 #===================
 # Like Comment API
