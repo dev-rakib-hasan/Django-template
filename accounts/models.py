@@ -1,5 +1,7 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from .managers import CustomUserManager
 from django.utils.text import slugify
+from django.conf import settings
 from django.db import models
 
 #import uuid
@@ -26,12 +28,18 @@ def generate_unique_slug(instance, value):
 
 
 # Create your models here.
-class CustomUser(AbstractUser):
+class CustomUser(AbstractBaseUser, PermissionsMixin):
+    username = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
-    
+
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+
+    objects = CustomUserManager()
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
-    
+
     def __str__(self):
         return self.username
 
@@ -55,3 +63,45 @@ class Blog(models.Model):
     def __str__(self):
         return self.title
     
+    
+class Like(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name = 'likes'
+    )
+    blog = models.ForeignKey(
+        Blog,
+        on_delete= models.CASCADE,
+        related_name='likes'   
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields = ['user','blog'],
+                name = 'unique_user_blo_like'
+            )
+        ]
+    def __str__(self):
+        return f'{self.user.username}-{self.blog.title}'
+    
+class Comment(models.Model):
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    blog = models.ForeignKey(
+        Blog,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+
+    def __str__(self):
+        return f'{self.user.username}-{self.blog.title}'
