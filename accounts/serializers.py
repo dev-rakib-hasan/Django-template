@@ -1,6 +1,10 @@
 from rest_framework import serializers
 from .models import CustomUser
-from . models import Blog
+from . models import(
+    Blog,
+    Like,
+    Comment,
+)
 
 
 
@@ -27,12 +31,23 @@ class LoginSerializer(serializers.ModelSerializer):
         
 
 class BlogSerializer(serializers.ModelSerializer):
+    like_count = serializers.IntegerField(
+        source = 'likes.count',
+        read_only=True
+    )
+    comment_count = serializers.IntegerField(
+        source ='comments.count',
+        read_only = True
+    )
     class Meta:
         model = Blog
         fields = [
             'id',
             'title',
             'slug',
+            'user',
+            'like_count',
+            'comment_count',
             'description',
             'created_at',
             'updated_at'
@@ -40,6 +55,52 @@ class BlogSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id', 
             'slug',
+            'user',
+            'like_count',
+            'comment_count',
             'created_at',
             'updated_at',
+        ]
+
+class LikeSerializer(serializers.ModelSerializer):
+    
+    username = serializers.CharField(
+        source = 'user.username',
+        read_only = True   
+    )
+    class Meta:
+        model = Like
+        fields = [
+            'id',
+            'username',
+            'blog',
+            'created_at'
+        ]
+        read_only_fields=[
+            'id',
+            'username',
+            'created_at'
+        ]
+
+class CommentSerializer(serializers.ModelSerializer):
+    
+    username = serializers.CharField(
+        source = 'user.userrname',
+        read_only = True
+    )
+    class Meta:
+        model = Comment
+        fields = [
+            'id',
+            'user',
+            'username',
+            'blog',
+            'content',
+            'created_at',
+            'updated_at'   
+        ]
+        read_only_fields=[
+            'id',
+            'username',
+            'created_at'
         ]
